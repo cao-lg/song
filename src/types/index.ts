@@ -5,12 +5,13 @@ export interface Song {
   trackId: number;
   trackName: string; // 歌曲名（繁中）
   artistName: string; // 歌手名（繁中）
-  previewUrl: string; // 30 秒 m4a 预览音频
+  previewUrl: string; // 30 秒 m4a 预览音频（在线）
   artworkUrl100: string; // 专辑封面
   primaryGenreName: string; // 流派
   releaseDate?: string; // 发行日期 ISO 字符串，用于年代筛选
   collectionName?: string; // 专辑名
   trackViewUrl?: string; // Apple Music 跳转链接
+  localAudio?: string; // 本地音频路径（如 "audio/xxx.m4a"），优先使用
 }
 
 /** 单道题目 */

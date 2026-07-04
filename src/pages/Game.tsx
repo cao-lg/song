@@ -223,6 +223,7 @@ export default function Game() {
       <section className="mt-4">
         <GameAudioPlayer
           previewUrl={q.song.previewUrl}
+          localAudio={q.song.localAudio}
           trackName={q.song.trackName}
           artistName={q.song.artistName}
           trackViewUrl={q.song.trackViewUrl}

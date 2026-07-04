@@ -276,19 +276,25 @@ function shuffle<T>(arr: T[]): T[] {
 /**
  * 从歌曲池生成 10 道不重复题目
  * - 正确答案不可重複（每首歌只作為正確答案一次）
+ * - 优先选有 localAudio 的歌曲作为正确答案（加载快、不依赖网络）
  * - 干扰项优先與正確答案歌手同性別（男歌手歌曲的干擾項不會出現女歌手）
  * - 干擾項允許跨題復用（僅排除當前正確答案），以最大化同性別匹配率
  * - 僅當同性別干擾項 < 3 時才回退到任意歌曲，保證題目可生成
- * - 每次循环重新打乱池，确保题目多样性（避免缓存后每次相同）
+ * - 每次循环重新打乱池，确保题目多样性
  */
 export function generateQuestions(pool: Song[], count = 10): Question[] {
   if (pool.length < 4) throw new Error("歌曲池不足 4 首");
   const questions: Question[] = [];
   const usedCorrectIds = new Set<number>();
 
+  // 优先从有 localAudio 的歌曲中选正确答案（加载快）
+  const localPool = pool.filter((s) => s.localAudio);
+  // 如果本地音频歌曲 >= count，优先用本地；否则混用
+  const primaryPool = localPool.length >= count ? localPool : pool;
+
   for (let i = 0; i < count; i++) {
     // 每次循环重新打乱，确保随机选到不同歌手的歌曲
-    const shuffledPool = shuffle(pool);
+    const shuffledPool = shuffle(primaryPool);
 
     // 从打乱后的池中找第一首未用作正確答案的歌曲
     const correctSong = shuffledPool.find((s) => !usedCorrectIds.has(s.trackId));

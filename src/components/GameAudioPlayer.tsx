@@ -1,22 +1,25 @@
 // 游戏内音频播放器
 // 像素播放/暂停按钮 + 歌名（默认 ??? 答题结束揭晓）+ 进度条 + Apple Music 跳转
+// 优先使用 localAudio（本地静态资源），失败回退到 previewUrl（在线）
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getAudio } from "@/lib/audio";
 import { ClockIcon, PauseIcon, PlayIcon } from "./PixelIcons";
 
 interface GameAudioPlayerProps {
-  previewUrl: string;
-  trackName: string; // 真实歌名
+  previewUrl: string; // 在线音频 URL（兜底）
+  localAudio?: string; // 本地音频路径（如 "audio/xxx.m4a"），优先使用
+  trackName: string;
   artistName: string;
   trackViewUrl?: string;
-  reveal: boolean; // 是否揭晓歌名（答题后）
-  replayKey: number; // 重播时 +1 触发重新播放
+  reveal: boolean;
+  replayKey: number;
   autoPlay?: boolean;
 }
 
 export function GameAudioPlayer({
   previewUrl,
+  localAudio,
   trackName,
   artistName,
   trackViewUrl,
@@ -26,12 +29,20 @@ export function GameAudioPlayer({
 }: GameAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // 0-100
+  const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(30);
+  // 实际使用的 URL：优先 localAudio，失败回退 previewUrl
+  const [actualUrl, setActualUrl] = useState<string>(
+    localAudio ? `/${localAudio}` : previewUrl,
+  );
 
   // 切换歌曲或重播时，重置并自动播放
   useEffect(() => {
-    const audio = getAudio(previewUrl);
+    // 每次切换歌曲时，重置为优先 localAudio
+    const url = localAudio ? `/${localAudio}` : previewUrl;
+    setActualUrl(url);
+
+    const audio = getAudio(url);
     audioRef.current = audio;
     audio.currentTime = 0;
     setProgress(0);
@@ -52,12 +63,27 @@ export function GameAudioPlayer({
       setProgress(0);
       audio.currentTime = 0;
     };
+    // 本地音频加载失败时，回退到在线 URL
+    const onError = () => {
+      if (localAudio && actualUrl !== previewUrl) {
+        setActualUrl(previewUrl);
+        const onlineAudio = getAudio(previewUrl);
+        audioRef.current = onlineAudio;
+        onlineAudio.currentTime = 0;
+        if (autoPlay) {
+          onlineAudio
+            .play()
+            .then(() => setPlaying(true))
+            .catch(() => setPlaying(false));
+        }
+      }
+    };
     audio.addEventListener("loadedmetadata", onLoaded);
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("ended", onEnd);
+    audio.addEventListener("error", onError);
 
     if (autoPlay) {
-      // 少量延迟确保 audio 已就绪
       audio
         .play()
         .then(() => setPlaying(true))
@@ -68,10 +94,11 @@ export function GameAudioPlayer({
       audio.removeEventListener("loadedmetadata", onLoaded);
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("ended", onEnd);
+      audio.removeEventListener("error", onError);
       audio.pause();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewUrl, replayKey]);
+  }, [previewUrl, localAudio, replayKey]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
