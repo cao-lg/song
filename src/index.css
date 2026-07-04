@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "DotGothic16", "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  image-rendering: pixelated;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: #1a0b2e;
+  color: #ffffff;
+}
+
+body {
+  font-family: "DotGothic16", "ZCOOL KuaiLe", sans-serif;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(217, 70, 239, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 20%, rgba(56, 189, 248, 0.16), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(245, 158, 11, 0.14), transparent 50%),
+    linear-gradient(180deg, #1a0b2e 0%, #0d1b3e 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* 像素网格暗纹 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* 像素描边文字 */
+.pixel-text-shadow {
+  text-shadow:
+    2px 0 0 #0f0716,
+    -2px 0 0 #0f0716,
+    0 2px 0 #0f0716,
+    0 -2px 0 #0f0716,
+    2px 2px 0 #0f0716,
+    -2px -2px 0 #0f0716,
+    2px -2px 0 #0f0716,
+    -2px 2px 0 #0f0716;
+}
+
+.pixel-text-shadow-sm {
+  text-shadow:
+    1px 0 0 #0f0716,
+    -1px 0 0 #0f0716,
+    0 1px 0 #0f0716,
+    0 -1px 0 #0f0716;
+}
+
+/* 像素方块边框 */
+.pixel-border {
+  border: 4px solid #0f0716;
+  box-shadow:
+    4px 4px 0 0 #0f0716,
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.2),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.3);
+}
+
+.pixel-border-sm {
+  border: 3px solid #0f0716;
+  box-shadow:
+    2px 2px 0 0 #0f0716,
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.2),
+    inset -1px -1px 0 0 rgba(0, 0, 0, 0.3);
+}
+
+/* 按钮按压效果 */
+.pixel-press {
+  transition: transform 0.06s ease-out, box-shadow 0.06s ease-out;
+}
+.pixel-press:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow:
+    1px 1px 0 0 #0f0716,
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.2),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.3);
+}
+
+/* 隐藏滚动条但保留滚动 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 像素角标点阵 */
+.dotted-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1.5px, transparent 1.5px);
+  background-size: 12px 12px;
+}
