@@ -67,10 +67,8 @@ export default function Game() {
         }
         if (!mounted) return;
         startGame(questions);
-        // 预加载前 3 题音频
-        const songsToPreload: Song[] = questions
-          .slice(0, 3)
-          .map((q) => q.song);
+        // 预加载所有 10 题音频（优先本地音频，加载更快）
+        const songsToPreload: Song[] = questions.map((q) => q.song);
         preloadSongs(songsToPreload);
       } catch (e) {
         if (!mounted) return;

@@ -21,7 +21,7 @@ const SINGERS = [
   "鍾柔美", "姚焯菲", "炎明熹",
 ];
 
-const PER_SINGER = 3; // 每位歌手下载前 3 首
+const PER_SINGER = 8; // 每位歌手下载前 8 首（70歌手 × 8 = ~560首，~560MB）
 const LIMIT = 50; // 搜索返回数量
 
 const audioDir = join(__dirname, "..", "public", "audio");

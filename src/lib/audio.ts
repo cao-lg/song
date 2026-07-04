@@ -1,4 +1,5 @@
 // HTML5 audio 元素管理：预加载 + 切换无缝衔接
+// 优先使用本地音频（localAudio），失败回退在线（previewUrl）
 import type { Song } from "@/types";
 
 const audioCache = new Map<string, HTMLAudioElement>();
@@ -14,10 +15,15 @@ export function getAudio(url: string): HTMLAudioElement {
   return audio;
 }
 
-/** 预加载多首歌曲音频 */
+/** 获取实际播放的 URL（优先 localAudio，否则 previewUrl） */
+export function getPlayUrl(song: Song): string {
+  return song.localAudio ? `/${song.localAudio}` : song.previewUrl;
+}
+
+/** 预加载多首歌曲音频（优先预加载本地音频） */
 export function preloadSongs(songs: Song[]): void {
   for (const s of songs) {
-    getAudio(s.previewUrl);
+    getAudio(getPlayUrl(s));
   }
 }
 
