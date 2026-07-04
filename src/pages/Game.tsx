@@ -16,6 +16,7 @@ import {
 } from "@/components/PixelIcons";
 import { fetchSongPool, generateQuestions } from "@/lib/itunes";
 import { preloadSongs, releaseAllAudio } from "@/lib/audio";
+import { clearSongPoolCache } from "@/lib/gameHelpers";
 import { useGameStore } from "@/store/gameStore";
 import type { Song } from "@/types";
 
@@ -137,10 +138,11 @@ export default function Game() {
               variant="amber"
               onClick={() => {
                 setError(null);
+                clearSongPoolCache();
                 window.location.reload();
               }}
             >
-              重試
+              清除緩存重試
             </PixelButton>
             <PixelButton variant="magenta" onClick={() => navigate("/level")}>
               調整篩選

@@ -138,8 +138,8 @@ function applyFilter(pool: Song[], filter: SongFilter): Song[] {
 }
 
 /**
- * 拉取全量歌曲池（多歌手并发），并按筛选条件过滤
- * - 全量池 localStorage 缓存 24h（key 固定，不隨 filter 變化）
+ * 拉取全量歌曲池（多歌手并发 + cantopop 热门补充），并按筛选条件过滤
+ * - 全量池 localStorage 缓存 1 小时（key 固定，不隨 filter 變化）
  * - 篩選在全量池上做，避免切換篩選重複請求 iTunes
  */
 export async function fetchSongPool(filter: SongFilter = DEFAULT_FILTER): Promise<Song[]> {
@@ -149,7 +149,7 @@ export async function fetchSongPool(filter: SongFilter = DEFAULT_FILTER): Promis
     const cached = localStorage.getItem(LS_SONG_POOL_KEY);
     if (cached) {
       const { ts, songs } = JSON.parse(cached) as { ts: number; songs: Song[] };
-      if (Date.now() - ts < SONG_POOL_TTL && Array.isArray(songs) && songs.length >= 20) {
+      if (Date.now() - ts < SONG_POOL_TTL && Array.isArray(songs) && songs.length >= 8) {
         fullPool = songs;
       }
     }
@@ -157,9 +157,10 @@ export async function fetchSongPool(filter: SongFilter = DEFAULT_FILTER): Promis
     // 缓存损坏，忽略
   }
 
-  // 2. 缓存失效则并发拉取所有歌手
+  // 2. 缓存失效则并发拉取所有歌手 + cantopop 热门补充
   if (fullPool.length === 0) {
-    const results = await Promise.allSettled(ARTISTS.map((a) => fetchSongsByArtist(a, 25)));
+    const searchTerms = [...ARTISTS, "cantopop", "廣東歌"];
+    const results = await Promise.allSettled(searchTerms.map((a) => fetchSongsByArtist(a, 50)));
     const seenIds = new Set<number>();
     for (const r of results) {
       if (r.status !== "fulfilled") continue;
@@ -171,7 +172,7 @@ export async function fetchSongPool(filter: SongFilter = DEFAULT_FILTER): Promis
       }
     }
     if (fullPool.length < 8) {
-      throw new Error("歌曲池數量不足，無法生成題目");
+      throw new Error("歌曲池數量不足，請檢查網絡或稍後重試");
     }
     // 写入全量缓存
     try {
