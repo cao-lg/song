@@ -52,20 +52,15 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// 復刻 src/lib/itunes.ts 中的 generateQuestions 同性別邏輯（干擾項允許跨題復用）
+// 復刻 src/lib/itunes.ts 中的 generateQuestions 同性別邏輯（干擾項允許跨題復用，每次循環重新打亂）
 function generateQuestions(pool: Song[], count = 10): Question[] {
   const questions: Question[] = [];
   const usedCorrectIds = new Set<number>();
-  const shuffledPool = shuffle(pool);
 
-  for (let i = 0; i < count && i < shuffledPool.length; i++) {
-    let correctSong: Song | undefined;
-    for (const s of shuffledPool) {
-      if (!usedCorrectIds.has(s.trackId)) {
-        correctSong = s;
-        break;
-      }
-    }
+  for (let i = 0; i < count; i++) {
+    const shuffledPool = shuffle(pool);
+
+    const correctSong = shuffledPool.find((s) => !usedCorrectIds.has(s.trackId));
     if (!correctSong) break;
     usedCorrectIds.add(correctSong.trackId);
 
@@ -75,16 +70,16 @@ function generateQuestions(pool: Song[], count = 10): Question[] {
     if (correctGender !== null) {
       distractorCandidates = shuffledPool.filter(
         (s) =>
-          s.trackId !== correctSong!.trackId &&
-          s.trackName !== correctSong!.trackName &&
+          s.trackId !== correctSong.trackId &&
+          s.trackName !== correctSong.trackName &&
           getArtistGender(s.artistName) === correctGender,
       );
     }
     if (distractorCandidates.length < 3) {
       distractorCandidates = shuffledPool.filter(
         (s) =>
-          s.trackId !== correctSong!.trackId &&
-          s.trackName !== correctSong!.trackName,
+          s.trackId !== correctSong.trackId &&
+          s.trackName !== correctSong.trackName,
       );
     }
 
@@ -94,7 +89,7 @@ function generateQuestions(pool: Song[], count = 10): Question[] {
       id: i,
       song: correctSong,
       options,
-      correctIndex: options.findIndex((o) => o.trackId === correctSong!.trackId),
+      correctIndex: options.findIndex((o) => o.trackId === correctSong.trackId),
     });
   }
   return questions;

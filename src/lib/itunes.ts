@@ -205,54 +205,48 @@ function shuffle<T>(arr: T[]): T[] {
  * - 干扰项优先與正確答案歌手同性別（男歌手歌曲的干擾項不會出現女歌手）
  * - 干擾項允許跨題復用（僅排除當前正確答案），以最大化同性別匹配率
  * - 僅當同性別干擾項 < 3 時才回退到任意歌曲，保證題目可生成
+ * - 每次循环重新打乱池，确保题目多样性（避免缓存后每次相同）
  */
 export function generateQuestions(pool: Song[], count = 10): Question[] {
   if (pool.length < 4) throw new Error("歌曲池不足 4 首");
   const questions: Question[] = [];
-  const usedCorrectIds = new Set<number>(); // 已用作正確答案的歌曲
-  const shuffledPool = shuffle(pool);
+  const usedCorrectIds = new Set<number>();
 
-  for (let i = 0; i < count && i < shuffledPool.length; i++) {
-    // 找一首未用作正確答案的歌曲
-    let correctSong: Song | undefined;
-    for (const s of shuffledPool) {
-      if (!usedCorrectIds.has(s.trackId)) {
-        correctSong = s;
-        break;
-      }
-    }
+  for (let i = 0; i < count; i++) {
+    // 每次循环重新打乱，确保随机选到不同歌手的歌曲
+    const shuffledPool = shuffle(pool);
+
+    // 从打乱后的池中找第一首未用作正確答案的歌曲
+    const correctSong = shuffledPool.find((s) => !usedCorrectIds.has(s.trackId));
     if (!correctSong) break;
     usedCorrectIds.add(correctSong.trackId);
 
     const correctGender = getArtistGender(correctSong.artistName);
 
-    // 优先选同性別干擾項（排除當前正確答案，允許跨題復用）
     let distractorCandidates: Song[] = [];
     if (correctGender !== null) {
       distractorCandidates = shuffledPool.filter(
         (s) =>
-          s.trackId !== correctSong!.trackId &&
-          s.trackName !== correctSong!.trackName &&
+          s.trackId !== correctSong.trackId &&
+          s.trackName !== correctSong.trackName &&
           getArtistGender(s.artistName) === correctGender,
       );
     }
-    // 同性別不足 3 首才回退到任意（排除當前正確答案）
     if (distractorCandidates.length < 3) {
       distractorCandidates = shuffledPool.filter(
         (s) =>
-          s.trackId !== correctSong!.trackId &&
-          s.trackName !== correctSong!.trackName,
+          s.trackId !== correctSong.trackId &&
+          s.trackName !== correctSong.trackName,
       );
     }
 
     const distractors = shuffle(distractorCandidates).slice(0, 3);
-    // 仍不足 3 則盡力而為（保證題目可生成）
     const options = shuffle([correctSong, ...distractors]);
     questions.push({
       id: i,
       song: correctSong,
       options,
-      correctIndex: options.findIndex((o) => o.trackId === correctSong!.trackId),
+      correctIndex: options.findIndex((o) => o.trackId === correctSong.trackId),
     });
   }
   return questions;
