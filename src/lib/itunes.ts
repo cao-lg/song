@@ -1,6 +1,7 @@
 // iTunes Search API 调用 + 题目生成
-// 主方案：同域 /api/get-songs（Cloudflare Pages Functions 代理）
-// 备选方案：JSONP 直连 iTunes（开发环境或 Functions 未就绪时）
+// 主方案：public/data/song-pool.json（3500+ 首，通过 fetch 加载，不阻塞首屏 JS）
+// 补充方案：localStorage 缓存（后台在线更新过的最新数据）
+// 备选方案：在线 API（Cloudflare Pages Functions 代理 / JSONP）后台静默更新
 import type { Song, Question } from "@/types";
 import {
   ARTISTS,
@@ -138,29 +139,54 @@ function applyFilter(pool: Song[], filter: SongFilter): Song[] {
 }
 
 /**
- * 拉取全量歌曲池（多歌手并发 + cantopop 热门补充），并按筛选条件过滤
- * - 全量池 localStorage 缓存 1 小时（key 固定，不隨 filter 變化）
- * - 篩選在全量池上做，避免切換篩選重複請求 iTunes
+ * 拉取全量歌曲池，按筛选条件过滤
+ *
+ * 策略（速度优先，保证加载快且歌曲量大）：
+ * 1. 优先读 localStorage 缓存（后台在线更新过的最新数据，最快）
+ * 2. 其次 fetch /data/song-pool.json（3500+ 首，CDN 静态资源，秒加载）
+ * 3. 后台静默用在线 API 更新缓存（不阻塞当前游戏，下次生效）
+ *
+ * 篩選在全量池上做，避免切換篩選重複請求
  */
 export async function fetchSongPool(filter: SongFilter = DEFAULT_FILTER): Promise<Song[]> {
-  // 1. 先看本地全量缓存
   let fullPool: Song[] = [];
+  let hasCached = false;
+
+  // 1. 优先读 localStorage 缓存（可能是在线更新过的最新数据）
   try {
     const cached = localStorage.getItem(LS_SONG_POOL_KEY);
     if (cached) {
       const { ts, songs } = JSON.parse(cached) as { ts: number; songs: Song[] };
-      if (Date.now() - ts < SONG_POOL_TTL && Array.isArray(songs) && songs.length >= 8) {
+      if (Date.now() - ts < SONG_POOL_TTL && Array.isArray(songs) && songs.length >= 50) {
         fullPool = songs;
+        hasCached = true;
       }
     }
   } catch {
     // 缓存损坏，忽略
   }
 
-  // 2. 缓存失效则并发拉取所有歌手 + cantopop 热门补充
+  // 2. 缓存没有或太旧，加载静态 JSON（3500+ 首，CDN 静态资源，秒加载）
+  if (fullPool.length === 0) {
+    try {
+      const res = await fetch("/data/song-pool.json");
+      if (res.ok) {
+        const data = (await res.json()) as Song[];
+        if (Array.isArray(data) && data.length >= 50) {
+          fullPool = data;
+        }
+      }
+    } catch {
+      // 静态 JSON 加载失败，继续尝试在线 API
+    }
+  }
+
+  // 3. 如果静态 JSON 也失败了，实时拉取在线 API（兜底）
   if (fullPool.length === 0) {
     const searchTerms = [...ARTISTS, "cantopop", "廣東歌"];
-    const results = await Promise.allSettled(searchTerms.map((a) => fetchSongsByArtist(a, 50)));
+    const results = await Promise.allSettled(
+      searchTerms.map((a) => fetchSongsByArtist(a, 50)),
+    );
     const seenIds = new Set<number>();
     for (const r of results) {
       if (r.status !== "fulfilled") continue;
@@ -174,20 +200,67 @@ export async function fetchSongPool(filter: SongFilter = DEFAULT_FILTER): Promis
     if (fullPool.length < 8) {
       throw new Error("歌曲池數量不足，請檢查網絡或稍後重試");
     }
-    // 写入全量缓存
+    // 写入缓存
     try {
-      localStorage.setItem(LS_SONG_POOL_KEY, JSON.stringify({ ts: Date.now(), songs: fullPool }));
+      localStorage.setItem(
+        LS_SONG_POOL_KEY,
+        JSON.stringify({ ts: Date.now(), songs: fullPool }),
+      );
     } catch {
       // localStorage 满了，忽略
     }
+    hasCached = true; // 刚拉完，不重复后台更新
   }
 
-  // 3. 应用筛选
+  // 4. 后台静默更新（不阻塞当前游戏，更新后写入 localStorage，下次生效）
+  if (!hasCached) {
+    refreshSongPoolInBackground().catch(() => {
+      // 静默更新失败不影响游戏
+    });
+  }
+
+  // 5. 应用筛选
   const filtered = applyFilter(fullPool, filter);
   if (filtered.length < 8) {
     throw new Error("此篩選條件下歌曲不足，請調整篩選或選擇「全部」");
   }
   return filtered;
+}
+
+/** 后台静默拉取在线歌曲池，写入 localStorage 缓存（不阻塞 UI） */
+let isRefreshing = false;
+export async function refreshSongPoolInBackground(): Promise<void> {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  try {
+    const searchTerms = [...ARTISTS, "cantopop", "廣東歌"];
+    const results = await Promise.allSettled(
+      searchTerms.map((a) => fetchSongsByArtist(a, 50)),
+    );
+    const seenIds = new Set<number>();
+    const songs: Song[] = [];
+    for (const r of results) {
+      if (r.status !== "fulfilled") continue;
+      for (const s of r.value) {
+        if (!seenIds.has(s.trackId)) {
+          seenIds.add(s.trackId);
+          songs.push(s);
+        }
+      }
+    }
+    if (songs.length >= 50) {
+      try {
+        localStorage.setItem(
+          LS_SONG_POOL_KEY,
+          JSON.stringify({ ts: Date.now(), songs }),
+        );
+      } catch {
+        // localStorage 满了，忽略
+      }
+    }
+  } finally {
+    isRefreshing = false;
+  }
 }
 
 /** 打乱数组（Fisher-Yates） */
