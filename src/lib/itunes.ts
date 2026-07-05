@@ -275,31 +275,47 @@ function shuffle<T>(arr: T[]): T[] {
 
 /**
  * 从歌曲池生成 10 道不重复题目
- * - 正确答案不可重複（每首歌只作為正確答案一次）
+ * - 正确答案：歌曲不可重複；歌手尽量不重複（池中歌手数 >= count 时强制不重複）
  * - 优先选有 localAudio 的歌曲作为正确答案（加载快、不依赖网络）
  * - 干扰项优先與正確答案歌手同性別（男歌手歌曲的干擾項不會出現女歌手）
- * - 干擾項允許跨題復用（僅排除當前正確答案），以最大化同性別匹配率
+ * - 同一題的 3 个干扰项尽量来自 3 个不同歌手
+ * - 全局追踪干扰项歌手使用次数，优先用使用少的歌手，避免某歌手频繁当干扰项
  * - 僅當同性別干擾項 < 3 時才回退到任意歌曲，保證題目可生成
  * - 每次循环重新打乱池，确保题目多样性
  */
 export function generateQuestions(pool: Song[], count = 10): Question[] {
   if (pool.length < 4) throw new Error("歌曲池不足 4 首");
   const questions: Question[] = [];
-  const usedCorrectIds = new Set<number>();
+  const usedCorrectIds = new Set<number>(); // 已用作正确答案的歌曲
+  const usedCorrectArtists = new Set<string>(); // 已用作正确答案的歌手
+  const distractorArtistUsage = new Map<string, number>(); // 歌手作为干扰项的使用次数
 
   // 优先从有 localAudio 的歌曲中选正确答案（加载快）
   const localPool = pool.filter((s) => s.localAudio);
-  // 如果本地音频歌曲 >= count，优先用本地；否则混用
   const primaryPool = localPool.length >= count ? localPool : pool;
+
+  // 池中不同歌手数
+  const artistCount = new Set(pool.map((s) => s.artistName)).size;
+  // 歌手数 >= count 时，正确答案强制不重复歌手；否则允许复用
+  const enforceUniqueArtist = artistCount >= count;
 
   for (let i = 0; i < count; i++) {
     // 每次循环重新打乱，确保随机选到不同歌手的歌曲
     const shuffledPool = shuffle(primaryPool);
 
-    // 从打乱后的池中找第一首未用作正確答案的歌曲
-    const correctSong = shuffledPool.find((s) => !usedCorrectIds.has(s.trackId));
+    // 找正确答案：优先未用过的歌曲 + 未用过的歌手
+    let correctSong: Song | undefined = shuffledPool.find(
+      (s) =>
+        !usedCorrectIds.has(s.trackId) &&
+        (!enforceUniqueArtist || !usedCorrectArtists.has(s.artistName)),
+    );
+    // 严格不重复歌手找不到时，放宽歌手限制（保证题目能生成）
+    if (!correctSong) {
+      correctSong = shuffledPool.find((s) => !usedCorrectIds.has(s.trackId));
+    }
     if (!correctSong) break;
     usedCorrectIds.add(correctSong.trackId);
+    usedCorrectArtists.add(correctSong.artistName);
 
     const correctGender = getArtistGender(correctSong.artistName);
 
@@ -307,27 +323,71 @@ export function generateQuestions(pool: Song[], count = 10): Question[] {
     if (correctGender !== null) {
       distractorCandidates = shuffledPool.filter(
         (s) =>
-          s.trackId !== correctSong.trackId &&
-          s.trackName !== correctSong.trackName &&
+          s.trackId !== correctSong!.trackId &&
+          s.trackName !== correctSong!.trackName &&
           getArtistGender(s.artistName) === correctGender,
       );
     }
     if (distractorCandidates.length < 3) {
       distractorCandidates = shuffledPool.filter(
         (s) =>
-          s.trackId !== correctSong.trackId &&
-          s.trackName !== correctSong.trackName,
+          s.trackId !== correctSong!.trackId &&
+          s.trackName !== correctSong!.trackName,
       );
     }
 
-    const distractors = shuffle(distractorCandidates).slice(0, 3);
+    const distractors = pickDistractors(
+      distractorCandidates,
+      3,
+      distractorArtistUsage,
+    );
     const options = shuffle([correctSong, ...distractors]);
     questions.push({
       id: i,
       song: correctSong,
       options,
-      correctIndex: options.findIndex((o) => o.trackId === correctSong.trackId),
+      correctIndex: options.findIndex((o) => o.trackId === correctSong!.trackId),
     });
   }
   return questions;
+}
+
+/**
+ * 从候选中挑选 n 个干扰项
+ * - 同一歌手最多选 1 首（保证 3 个干扰项尽量来自 3 个不同歌手）
+ * - 优先选全局使用次数少的歌手，均衡分布
+ * - 候选不足时回退允许同歌手多首
+ */
+function pickDistractors(
+  candidates: Song[],
+  n: number,
+  usage: Map<string, number>,
+): Song[] {
+  const shuffled = shuffle(candidates);
+  // 按歌手使用次数升序排序（次数少的优先）
+  const sorted = shuffled.sort(
+    (a, b) => (usage.get(a.artistName) ?? 0) - (usage.get(b.artistName) ?? 0),
+  );
+
+  const picked: Song[] = [];
+  const pickedArtists = new Set<string>();
+
+  // 第一轮：每个歌手只选一首，优先使用次数少的
+  for (const s of sorted) {
+    if (picked.length >= n) break;
+    if (pickedArtists.has(s.artistName)) continue;
+    picked.push(s);
+    pickedArtists.add(s.artistName);
+  }
+  // 第二轮：若不足 n（候选歌手太少），回退允许同歌手多首
+  for (const s of sorted) {
+    if (picked.length >= n) break;
+    if (picked.includes(s)) continue;
+    picked.push(s);
+  }
+  // 记录使用次数
+  for (const s of picked) {
+    usage.set(s.artistName, (usage.get(s.artistName) ?? 0) + 1);
+  }
+  return picked;
 }
