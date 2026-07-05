@@ -56,13 +56,10 @@ export default function Home() {
             <CdIcon size={24} />
           </div>
           <h1 className="font-pixel text-3xl sm:text-4xl text-amber2 pixel-text-shadow leading-tight">
-            CANTO
-          </h1>
-          <h1 className="font-pixel text-3xl sm:text-4xl text-magenta pixel-text-shadow leading-tight mt-1">
-            PARTY
+            粵歌仔
           </h1>
           <p className="font-gothic text-xs text-white/70 mt-2 tracking-widest">
-            超級無敵估歌仔
+            像素風粵語歌猜歌
           </p>
         </div>
       </section>

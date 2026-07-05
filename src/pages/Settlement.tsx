@@ -27,10 +27,10 @@ export default function Settlement() {
   const xpToNext = Math.max(0, result.levelUpXPAfter - result.xpAfter);
 
   const handleShare = async () => {
-    const text = `我在 Canto Party 今 Round 答對 ${result.correctCount}/${result.questions.length} 題，獲得 ${result.xpEarned} XP！${evaluation}`;
+    const text = `我在「粵歌仔」今 Round 答對 ${result.correctCount}/${result.questions.length} 題，獲得 ${result.xpEarned} XP！${evaluation}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Canto Party", text, url: window.location.origin });
+        await navigator.share({ title: "粵歌仔", text, url: window.location.origin });
       } else {
         await navigator.clipboard.writeText(`${text} ${window.location.origin}`);
         setCopied(true);

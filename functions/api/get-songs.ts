@@ -60,7 +60,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   let itunesRes: Response;
   try {
     itunesRes = await fetch(itunesUrl, {
-      headers: { "User-Agent": "CantoParty/1.0" },
+      headers: { "User-Agent": "YueGeZai/1.0" },
     });
   } catch (e) {
     return jsonError(502, `iTunes 请求失败：${String(e)}`);

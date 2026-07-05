@@ -170,6 +170,6 @@ export function calcLevelUpXP(level: number): number {
 }
 
 /** localStorage key */
-export const LS_KEY = "canto_party_user_v1";
-export const LS_SONG_POOL_KEY = "canto_party_songpool_v1";
+export const LS_KEY = "yuegezai_user_v1";
+export const LS_SONG_POOL_KEY = "yuegezai_songpool_v1";
 export const SONG_POOL_TTL = 60 * 60 * 1000; // 1 小时

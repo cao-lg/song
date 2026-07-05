@@ -29,7 +29,7 @@ for (const term of ARTISTS) {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&country=hk&lang=zh_hk&limit=${LIMIT}`;
   try {
     const res = await fetch(url, {
-      headers: { "User-Agent": "CantoParty/1.0" },
+      headers: { "User-Agent": "YueGeZai/1.0" },
     });
     if (!res.ok) {
       console.warn(`  [${term}] HTTP ${res.status}`);
