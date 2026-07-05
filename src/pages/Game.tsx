@@ -59,6 +59,8 @@ export default function Game() {
     (async () => {
       setLoading(true);
       setError(null);
+      // 新局开始前释放所有 audio（防止上一局残留 audio 继续播放）
+      releaseAllAudio();
       try {
         const pool = await fetchSongPool(filter);
         const questions = generateQuestions(pool, TOTAL_QUESTIONS);
@@ -83,7 +85,12 @@ export default function Game() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 组件卸载时不释放音频，留给 round-result/settlement 后处理
+  // 组件卸载时释放所有 audio（兜底，确保离开 Game 页面时 audio 被暂停）
+  useEffect(() => {
+    return () => {
+      releaseAllAudio();
+    };
+  }, []);
 
   // 答题后自动切换下一题
   const answered = session

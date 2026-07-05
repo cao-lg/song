@@ -1,6 +1,6 @@
 // localStorage 用户数据读写
 import type { UserData } from "@/types";
-import { LS_KEY, calcLevelUpXP } from "@/data/constants";
+import { LS_KEY, calcLevelUpXP, DEFAULT_ITEMS } from "@/data/constants";
 
 const DEFAULT_DATA: UserData = {
   level: 1,
@@ -10,10 +10,7 @@ const DEFAULT_DATA: UserData = {
   totalCorrect: 0,
   totalAnswered: 0,
   audioSource: "local-first",
-  items: {
-    fiftyFifty: 3,
-    replay: 3,
-  },
+  items: { ...DEFAULT_ITEMS },
 };
 
 /** 读取用户数据，缺失字段用默认值补齐，levelUpXP 永远根据 level 重新计算 */

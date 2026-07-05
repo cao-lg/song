@@ -1,7 +1,7 @@
 // 全局状态：用户数据 + 游戏会话 + 歌曲筛选
 import { create } from "zustand";
 import type { GameResult, GameSession, Question, UserData } from "@/types";
-import { calcLevelUpXP, DEFAULT_FILTER, type SongFilter } from "@/data/constants";
+import { calcLevelUpXP, DEFAULT_FILTER, DEFAULT_ITEMS, type SongFilter } from "@/data/constants";
 import { loadUserData, saveUserData } from "@/lib/storage";
 
 interface GameState {
@@ -79,7 +79,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startGame: (questions) => {
-    set({ session: createInitialSession(questions), error: null });
+    const { user } = get();
+    // 每局开始重置道具数量（50/50 和重播各 3 个）
+    const resetUser: UserData = {
+      ...user,
+      items: { ...DEFAULT_ITEMS },
+    };
+    saveUserData(resetUser);
+    set({ session: createInitialSession(questions), error: null, user: resetUser });
   },
 
   answer: (optionIndex) => {

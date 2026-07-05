@@ -157,6 +157,12 @@ export const ITEM_LABEL: Record<ItemId, string> = {
   shop: "商店",
 };
 
+/** 道具默认数量（每局开始重置为此值） */
+export const DEFAULT_ITEMS: { fiftyFifty: number; replay: number } = {
+  fiftyFifty: 3,
+  replay: 3,
+};
+
 /** 评价横幅文案 */
 export function getEvaluation(score: number): string {
   if (score < 4) return "繼續努力！";
