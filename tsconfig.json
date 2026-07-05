@@ -23,7 +23,6 @@
     "noFallthroughCasesInSwitch": false,
     "noUncheckedSideEffectImports": false,
     "forceConsistentCasingInFileNames": false,
-    "baseUrl": "./",
     "paths": {
       "@/*": [
         "./src/*"
