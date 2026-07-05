@@ -24,6 +24,9 @@ interface GameState {
   // 筛选操作
   setFilter: (f: SongFilter) => void;
 
+  // 音频源设置
+  setAudioSource: (s: "local-first" | "online-first") => void;
+
   // 游戏会话操作
   startGame: (questions: Question[]) => void;
   answer: (optionIndex: number) => void;
@@ -67,6 +70,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   setFilter: (f) => set({ filter: f }),
+
+  setAudioSource: (s) => {
+    const { user } = get();
+    const next = { ...user, audioSource: s };
+    saveUserData(next);
+    set({ user: next });
+  },
 
   startGame: (questions) => {
     set({ session: createInitialSession(questions), error: null });

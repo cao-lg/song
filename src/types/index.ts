@@ -41,6 +41,7 @@ export interface UserData {
   totalGames: number; // 累计游戏局数
   totalCorrect: number; // 累计答对题数
   totalAnswered: number; // 累计答题数（用于计算准确率）
+  audioSource: "local-first" | "online-first"; // 音频源偏好
   items: {
     fiftyFifty: number; // 50/50 道具，初始 3
     replay: number; // 重播道具，初始 3

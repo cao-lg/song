@@ -13,7 +13,7 @@ import {
   StarIcon,
 } from "@/components/PixelIcons";
 import { useGameStore } from "@/store/gameStore";
-import { GENRE_OPTIONS, ERA_OPTIONS } from "@/data/constants";
+import { AUDIO_SOURCE_OPTIONS, GENRE_OPTIONS, ERA_OPTIONS } from "@/data/constants";
 import { cn } from "@/lib/utils";
 
 export default function LevelDetail() {
@@ -21,6 +21,7 @@ export default function LevelDetail() {
   const user = useGameStore((s) => s.user);
   const filter = useGameStore((s) => s.filter);
   const setFilter = useGameStore((s) => s.setFilter);
+  const setAudioSource = useGameStore((s) => s.setAudioSource);
   const xpToNext = Math.max(0, user.levelUpXP - user.currentXP);
   const accuracy =
     user.totalAnswered > 0
@@ -132,6 +133,38 @@ export default function LevelDetail() {
 
         <p className="font-gothic text-[10px] text-white/45 mt-1.5 px-1">
           ※ 選項自動匹配同性別歌手，男歌手歌曲不會出現女歌手干擾項
+        </p>
+      </section>
+
+      {/* 音頻源設置 */}
+      <section className="mt-4">
+        <p className="font-gothic text-xs text-white/70 mb-2 px-1 flex items-center gap-1">
+          <span className="text-sky2">♪</span> 音頻源
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {AUDIO_SOURCE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setAudioSource(opt.value)}
+              className={cn(
+                "pixel-border-sm pixel-press p-2.5 text-left transition-colors",
+                user.audioSource === opt.value
+                  ? "bg-sky2 text-ink"
+                  : "bg-bgmid text-white/70 hover:text-white",
+              )}
+            >
+              <p className="font-gothic text-xs font-bold">{opt.label}</p>
+              <p className={cn(
+                "font-gothic text-[10px] mt-0.5",
+                user.audioSource === opt.value ? "text-ink/70" : "text-white/50",
+              )}>
+                {opt.desc}
+              </p>
+            </button>
+          ))}
+        </div>
+        <p className="font-gothic text-[10px] text-white/45 mt-1.5 px-1">
+          ※ 電信/聯家用戶如播放卡頓，建議切換為「線上優先」
         </p>
       </section>
 

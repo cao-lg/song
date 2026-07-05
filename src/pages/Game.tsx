@@ -67,9 +67,9 @@ export default function Game() {
         }
         if (!mounted) return;
         startGame(questions);
-        // 预加载所有 10 题音频（优先本地音频，加载更快）
+        // 预加载所有 10 题音频（根据用户音频源偏好）
         const songsToPreload: Song[] = questions.map((q) => q.song);
-        preloadSongs(songsToPreload);
+        preloadSongs(songsToPreload, user.audioSource);
       } catch (e) {
         if (!mounted) return;
         setError(e instanceof Error ? e.message : "載入失敗");
@@ -227,6 +227,7 @@ export default function Game() {
           trackViewUrl={q.song.trackViewUrl}
           reveal={answered}
           replayKey={replayKey}
+          audioSource={user.audioSource}
         />
       </section>
 

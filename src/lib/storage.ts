@@ -9,6 +9,7 @@ const DEFAULT_DATA: UserData = {
   totalGames: 0,
   totalCorrect: 0,
   totalAnswered: 0,
+  audioSource: "local-first",
   items: {
     fiftyFifty: 3,
     replay: 3,

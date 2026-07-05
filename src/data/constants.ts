@@ -164,6 +164,14 @@ export function getEvaluation(score: number): string {
   return "太厲害了！";
 }
 
+/** 音频源偏好 */
+export type AudioSource = "local-first" | "online-first";
+
+export const AUDIO_SOURCE_OPTIONS: { value: AudioSource; label: string; desc: string }[] = [
+  { value: "local-first", label: "本地優先", desc: "從本站 CDN 加載，速度穩定" },
+  { value: "online-first", label: "線上優先", desc: "從 iTunes CDN 加載，電信用戶可能更快" },
+];
+
 /** 等级升级所需 XP：1 级 10 XP，每级 +5 */
 export function calcLevelUpXP(level: number): number {
   return 10 + (level - 1) * 5;
