@@ -27,7 +27,7 @@ export function GameAudioPlayer({
   trackViewUrl,
   reveal,
   replayKey,
-  audioSource = "local-first",
+  audioSource = "online-first",
   autoPlay = true,
 }: GameAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
