@@ -1,6 +1,6 @@
 // 最终结算页
 // 评价横幅 + 等级结算区（徽章 + 本局XP + 升级进度 + 分享） + 再玩一次/主页按钮
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell } from "@/components/PageShell";
 import { PixelButton } from "@/components/PixelButton";
@@ -14,14 +14,31 @@ import {
 import { useGameStore } from "@/store/gameStore";
 import { getEvaluation } from "@/data/constants";
 import { clearSongPoolCache } from "@/lib/gameHelpers";
+import type { GameResult } from "@/types";
 
 export default function Settlement() {
   const navigate = useNavigate();
   const endGame = useGameStore((s) => s.endGame);
   const clearSession = useGameStore((s) => s.clearSession);
   const user = useGameStore((s) => s.user);
-  const [result, setResult] = useState(() => endGame());
+  const session = useGameStore((s) => s.session);
+  const [result, setResult] = useState<GameResult | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!session) {
+      navigate("/", { replace: true });
+      return;
+    }
+    if (!result) {
+      setResult(endGame());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!session || !result) {
+    return null; // 等待导航完成或结算数据
+  }
 
   const evaluation = getEvaluation(result.correctCount);
   const xpToNext = Math.max(0, result.levelUpXPAfter - result.xpAfter);

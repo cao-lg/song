@@ -1,5 +1,6 @@
 // 本局成绩页
 // 标题 + 大字号得分 + 答题详情列表（对错区分色）+ 继续按钮
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell } from "@/components/PageShell";
 import { PixelButton } from "@/components/PixelButton";
@@ -10,10 +11,14 @@ export default function RoundResult() {
   const navigate = useNavigate();
   const session = useGameStore((s) => s.session);
 
+  useEffect(() => {
+    if (!session) {
+      navigate("/", { replace: true });
+    }
+  }, [session, navigate]);
+
   if (!session) {
-    // 直接访问此页无会话，返回主页
-    navigate("/");
-    return null;
+    return null; // 等待导航完成
   }
 
   const correctCount = session.correctCount;
